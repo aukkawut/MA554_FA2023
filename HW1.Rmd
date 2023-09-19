@@ -1,0 +1,134 @@
+---
+title: "MA554 Applied Multivariate Analysis HW1"
+author: "Aukkawut Ammartayakun"
+date: "2023-09-19"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+data <- read_delim("T1-2.txt", delim="  ", col_names=FALSE)
+colnames(data) <- c("","Density", "Strength MD", "Strength CD")
+```
+
+## Problem 1
+
+Paper is manufactured in continuous sheets several feet wide. Because of the orientation of fibers within the paper, it has a different strength when measured in the direction produced by the machine than when measured across, or at right angles to, the machine direction. The dataset in `T1-2.txt` contains 41 measurements of $X_1$ = density (grams/cubic centimeter), $X_2$ = strength (pounds) in the machine direction, and $X_3$ = strength (pounds) in the cross direction. Use any statistical package to answer the following.
+
+#### a) Report summary statistics (means and variances) of the three variables, and present a scatter plot matrix.
+
+```{r data}
+var_summary <- function(data) {
+    s <- summary(data)
+    var_data <- sapply(data, var, na.rm = TRUE)
+    r <- rbind(s, Variance = var_data)
+    return(r)
+}
+var_summary(data)
+```
+
+From this we can see that $(\bar{X}_1, S^2_{1}) = (0.8119, 0.0013)$, $(\bar{X}_2, S^2_{2}) = (121.0, 59.321)$, $(\bar{X}_3, S^2_{3}) = (70.70, 95.857)$
+
+```{r pressure, echo=FALSE}
+pairs(data[, 2:4], 
+      main="Scatter Plot Matrix of Paper Data", 
+      pch=19, 
+      col="blue")
+```
+
+#### b) Identify an outlier
+
+Visually, we can see that the point where density is greater than $0.96$. That is the maximum of the density. 
+```{r search}
+outlier <- data[data$Density == max(data$Density), ]
+outlier
+```
+## Problem 2
+
+Consider a bivariate normal distribution for $\mathbf{X} = (X_1,X_2)^\top$, with $\mathbb{E}\left[X_1\right] = 3, \mathbb{E}\left[X_2\right] = 5, \text{Var}\left[X_{1}\right] = 10, \text{Var}\left[X_2\right] = 4, \text{Corr}\left(X_1,X_2\right) = 0.9$
+
+#### a) Sketch a contour of the density
+```{r contour}
+library(mvtnorm)
+library(MASS)
+mu <- c(3, 5)
+sigma1 <- sqrt(10)
+sigma2 <- sqrt(4)
+rho <- 0.9
+cov_12 <- rho * sigma1 * sigma2
+Sigma <- matrix(c(10, cov_12, cov_12, 4), ncol=2)
+samples <- mvrnorm(n = 100, mu = mu, Sigma = Sigma)
+x <- seq(min(samples[,1]) - 1, max(samples[,1]) + 1, length=100)
+y <- seq(min(samples[,2]) - 1, max(samples[,2]) + 1, length=100)
+z <- matrix(0, ncol=length(x), nrow=length(y))
+for (i in 1:length(x)) {
+  for (j in 1:length(y)) {
+    z[j,i] <- dmvnorm(c(x[i], y[j]), mean=mu, sigma=Sigma)
+  }
+}
+
+contour(x, y, z)
+```
+
+#### b) Generate $n = 100$ random observations from this distribution, and draw a scatterplot of the observation.
+
+```{r}
+plot(samples, xlab="X1", ylab="X2")
+```
+
+#### c) Report the sample mean, and compare it with the population mean.
+```{r}
+summary(samples)
+```
+From the result, we can see that the sample mean is $\bar{X} = (2.8398,4.8294)^{\top}$ while the population mean is $\mathbb{E}[X] = (3,5)^\top$
+
+#### d) Report the sample covariance matrix $S$, and sketch the equidistance set given by the sample Mahalanobis distance, i.e., $E_c= \{\mathbf{y} \in \mathbb{R}^2 | (\mathbf{y} - \bar{\mathbf{x}})^\top S^{-1}  (\mathbf{y} - \bar{\mathbf{x}}) = c^2\}$ for $c>0$
+
+## Problem 3
+
+By expressing a correlation matrix $\mathbf{R}_{n\times n}$ with equal correlation $\rho$ as $\mathbf{R} = (1-\rho)\mathbb{I} + \rho \mathbb{J}$, where $\mathbb{J}$ is an $n\times n$ matrix of ones, find $\det(\mathbf{R})$ and $\mathbf{R}^{-1}$.
+
+Hint: Consider the fact that $\det\left(\mathbb{I}_p + AB\right) = \det\left(\mathbb{I}_q + BA\right)$ for $A_{p\times q}$ and $B_{q\times p}$ and the Woodbury formula
+
+*** 
+
+bla
+
+## Problem 4
+
+Prove Corollary 12 of Lecture 1.
+
+>**Corollary 12** Let $\mathbf{X}\sim \mathcal{N}_p(\mathbf{0},\Sigma)$ and  $\mathbf{A}$ be a $p\times p$ symmetric matrix. Then
+$$Y  = \mathbf{X}^\top \mathbf{A}\mathbf{X} \sim \chi^2(m)$$
+if and only if either i) $m$ of the eigenvalues of $\mathbf{A}\Sigma$ are $1$ and the rest are $0$ or ii) $m$ of the eigenvalues of $\Sigma\mathbf{A}$ are $1$ and the rest are $0$.
+
+Hint: Similar to the proof of Corollary 13.
+
+*** 
+
+Let $\mathbf{B} = \Sigma^{\frac{1}{2}}\mathbf{A}\Sigma^{\frac{1}{2}}$, we can see that from theorem 11,
+
+## Problem 5
+
+Prove Theorem 15 of Lecture 1. 
+
+>**Theorem 15** Let $\mathbf{X}\sim \mathcal{N}_p (\boldsymbol{\mu}, \Sigma)$. Suppose $\mathbf{A}$ and $\mathbf{B}$ are $p\times p$ symmetric matrices. Then if $\mathbf{B}\Sigma \mathbf{A} = 0$, $\mathbf{X}^\top \mathbf{A} \mathbf{X}$ and $\mathbf{X}^\top\mathbf{B}\mathbf{X}$ are independent.
+
+Hint: Similar to the proof of Theorem 14.
+
+*** 
+
+bla
+
+## Problem 6
+
+Let $\mathbf{X}\sim \mathcal{N}_p(\boldsymbol{\mu},\sigma^2\mathbb{I})$ and $\mathbf{A}$ be a $p\times p$ symmetric matrix. Then $Y = \frac{1}{\sigma^2}\mathbf{X}^\top\mathbf{AX}\sim \chi^2(m,\delta)$ with $\delta = \frac{\boldsymbol{\mu}^\top\mathbf{A}\boldsymbol{\mu}}{\sigma^2}$, if and only if $\mathbf{A}$ is an idempotent of rank $m\leq p$.
+
+Hint: Similar to the proof of Theorem 11. Note: Let $X_1, \dots, X_n$ be independent random variables and $X_i \sim \mathcal{N}(\mu_i, \sigma^2)$, $i = 1, \dots, n$. The distribution of the random variable $Y = \frac{(X_1^2 + \dots + X_n^2)}{\sigma^2}$ is called the noncentral chi-square distribution with degrees of freedom $n$ and the noncentrality parameter $\delta = \frac{(\mu_1^2 + \dots + \mu_n^2)}{\sigma^2}$, denoted by $\chi^2(n,\delta)$
+
+***
+
+bla
