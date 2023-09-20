@@ -3,8 +3,7 @@ title: "MA554 Applied Multivariate Analysis HW1"
 author: "Aukkawut Ammartayakun"
 date: "2023-09-19"
 output:
-  html_document:
-    df_print: paged
+  html_document
 ---
 
 ```{r setup, include=FALSE}
@@ -33,10 +32,7 @@ var_summary(data)
 From this we can see that $(\bar{X}_1, S^2_{1}) = (0.8119, 0.0013)$, $(\bar{X}_2, S^2_{2}) = (121.0, 59.321)$, $(\bar{X}_3, S^2_{3}) = (70.70, 95.857)$
 
 ```{r pressure, echo=FALSE}
-pairs(data[, 2:4], 
-      main="Scatter Plot Matrix of Paper Data", 
-      pch=19, 
-      col="blue")
+pairs(data[, 2:4])
 ```
 
 #### b) Identify an outlier
@@ -86,6 +82,24 @@ summary(samples)
 From the result, we can see that the sample mean is $\bar{X} = (2.8398,4.8294)^{\top}$ while the population mean is $\mathbb{E}[X] = (3,5)^\top$
 
 #### d) Report the sample covariance matrix $S$, and sketch the equidistance set given by the sample Mahalanobis distance, i.e., $E_c= \{\mathbf{y} \in \mathbb{R}^2 | (\mathbf{y} - \bar{\mathbf{x}})^\top S^{-1}  (\mathbf{y} - \bar{\mathbf{x}}) = c^2\}$ for $c>0$
+```{r}
+sample_mean <- colMeans(samples)
+sample_cov <- cov(samples)
+sample_cov
+```
+
+```{r}
+c_values <- c(1,2,3,4,5)
+x_range <- seq(min(samples[,1]) - 1, max(samples[,1]) + 1, length=100)
+y_range <- seq(min(samples[,2]) - 1, max(samples[,2]) + 1, length=100)
+grid <- expand.grid(x=x_range, y=y_range)
+mahalanobis_grid <- apply(grid, 1, function(point) {
+  mahalanobis(matrix(point, ncol=2), center=sample_mean, cov=sample_cov)
+})
+mahalanobis_matrix <- matrix(mahalanobis_grid, ncol=length(x_range))
+contour(x_range, y_range, mahalanobis_matrix, levels=c_values^2)
+points(samples)
+```
 
 ## Problem 3
 
@@ -95,7 +109,31 @@ Hint: Consider the fact that $\det\left(\mathbb{I}_p + AB\right) = \det\left(\ma
 
 *** 
 
-bla
+We can easily see that $\mathbf{R}$ is symmetric. Since $\mathbf{R}$ is symmetric, its determinant is the product of the eigenvalues. In this case, consider the expression
+$$\det(R - \lambda \mathbb{I}) = \det((1-\rho-\lambda)\mathbb{I} + \rho\mathbb{J})$$
+
+We want to find eigenvalues of $\mathbf{R}$ from this characteristic equation
+$$\det((1-\rho-\lambda)\mathbb{I} + \rho\mathbb{J}) = 0$$
+
+Notice that $\mathbb{J}$ is matrix of symmetric rank one, that means its eigenvalues is either $0$ or $v^\top u$ for $\mathbb{J} = uv^\top$. Since $\mathbb{J}$ is a matrix of one, it is trivial to say that $u$ and $v$ are vectors of one. Thus, the eigenvalues of $\mathbb{J}$ are one of $n$ and $n-1$ of $0$. Now, looking at the characteristic equation, one can say that it is a scaling of characteristic equation of $\rho\mathbb{J}$, that is,
+$$\det(\rho J + \gamma \mathbb{I}) = 0$$
+
+Thus, $$\det(\mathbf{R}) = (1+(n-1)\rho)(1-\rho)^{n-1}$$
+
+To find $\mathbf{R}^{-1}$, one can use Woodbury formula which is
+
+>**Woodbury formula** $$\left(\mathbf{A}+\mathbf{U}\mathbf{V}^\top\right)^{-1} = \mathbf{A}^{-1} - \mathbf{A}^{-1}\mathbf{U}(\mathbb{I}_n + \mathbf{V}^{\top}\mathbf{A}^{-1}\mathbf{U})^{-1}\mathbf{V}^{\top}\mathbf{A}^{-1}$$
+for non-singular $A\in\mathbb{R}^{m^2}$ and non-square matrix $U,V \in \mathbb{R}^{m\times n}$ for $m>n$
+
+Now, we can see from previous decomposition that $\mathbb{J} = uv^\top$ for vector of one $u,v$. Thus,
+
+$$\mathbf{R}^{-1} = \frac{1}{1-\rho} \mathbb{I} - \frac{\rho}{1-\rho} \mathbb{I} \mathbf{1}\left(\mathbb{I} + \mathbf{1}^\top \frac{\rho}{1-\rho}\mathbb{I} \mathbf{1}\right)^{-1}\mathbf{1}^\top \frac{1}{1-\rho} \mathbb{I}$$
+
+Notice that
+$$\left(\mathbb{I} + \mathbf{1}^\top \frac{\rho}{1-\rho}\mathbb{I} \mathbf{1}\right)^{-1} = \left(1 + \frac{n\rho}{1-\rho}\right)^{-1}$$
+
+Therefore,
+$$\mathbf{R}^{-1} = \frac{1}{1-\rho}\mathbb{I} - \left(1 + \frac{n\rho}{1-\rho}\right)^{-1}\left(\frac{\rho}{(1-\rho)^2}\right) \mathbb{J}$$
 
 ## Problem 4
 
@@ -109,7 +147,7 @@ Hint: Similar to the proof of Corollary 13.
 
 *** 
 
-Let $\mathbf{B} = \Sigma^{\frac{1}{2}}\mathbf{A}\Sigma^{\frac{1}{2}}$, we can see that from theorem 11,
+Let $\mathbf{B} = \Sigma^{\frac{1}{2}}\mathbf{A}\Sigma^{\frac{1}{2}}$. We can see that $\mathbf{B}$ is idempotent matrix of rank $m$. Now, the transformation $\mathbf{Z} = \Sigma^{-1}\mathbf{X} \sim \mathcal{N}_p(0,\mathbb{I})$ and by definition, makes $Y = \mathbf{Z}^\top B\mathbf{Z}$ a chi-squared distributed random vector with degree of freedom $m$. Since $\mathbf{B}$ is idempotent matrix, that means its eigenvalues is either zero or one. We also know that if compatible, $XY$ has the same unique eigenvalue as $YX$. Thus, one can see that $\mathbf{B}$ is comparable with $\mathbf{A}\Sigma$ and $\Sigma\mathbf{A}$ in terms of its unique eigenvalues. Note that diagonalization of $\mathbf{B}$ leads to this comparability. Thus, the if part follows. Conversely, if $m$ of eigenvalues of $\mathbf{A}\Sigma$ are 1 and the rest are 0 or that applies for $\Sigma \mathbf{A}$ implies that $\mathbf{B}$ is idempotent with rank $m$.
 
 ## Problem 5
 
@@ -121,7 +159,11 @@ Hint: Similar to the proof of Theorem 14.
 
 *** 
 
-bla
+We can write $\mathbf{X}^\top \mathbf{A}\mathbf{X} = \left(L^\top \mathbf{X}\right)^2$ for some $L$ where $\mathbf{A} = LL^\top$ and $\mathbf{X}^\top \mathbf{B}\mathbf{X} = \left(U^\top \mathbf{X}\right)^2$ for some $U$ where $UU^\top = \mathbf{B}$. Without the loss of generality, we want to show that $L^\top \Sigma U = 0$, i.e., covariance is zero. We know that $\mathbf{B}\Sigma \mathbf{A} = 0$. That means
+$$UU^\top\Sigma LL^\top = 0$$
+$$U^\top U U^\top \Sigma LL^\top L = 0$$
+$$U^\top \Sigma L = 0$$
+which is equivalent to what we want to show.
 
 ## Problem 6
 
@@ -131,4 +173,16 @@ Hint: Similar to the proof of Theorem 11. Note: Let $X_1, \dots, X_n$ be indepen
 
 ***
 
-bla
+Consider the spectral decomposition of $\mathbf{A} = \Gamma^\top \Lambda \Gamma$ for $\Lambda = \text{diag}(1,\dots,1,0,\dots,0)$ and trace of $m$ (from idempotent). Then,
+$$Y = \frac{1}{\sigma^2}\mathbf{X}^\top \mathbf{AX} = \frac{1}{\sigma^2}(\Gamma\mathbf{X})^\top\Lambda(\Gamma\mathbf{X})$$
+Recall that $\mathbf{X}\sim \mathcal{N}_p(\boldsymbol{\mu},\sigma^2\mathbb{I})$, then  $\Gamma\mathbf{X}\sim \mathcal{N}_p(\Gamma\boldsymbol{\mu},\sigma^2\Gamma\mathbb{I}\Gamma^\top)$. From the decomposition, one can see that for $\Gamma\mathbf{X} = (\tilde{X}_1,\dots \tilde{X}_p)^\top$
+$$Y = \frac{1}{\sigma^2}\sum_{j=1}^{p}\lambda_j \tilde{X}_j^2 = \sum_{j=1}^{m} \frac{\tilde{X}^2_j}{\sigma^2}$$ Without the loss of generality, we can say that the mean is $\tilde{\mu}_i$ and variance is constant $\sigma^2$. This follows the noncentric chi-squared distribution definition where $\tilde{X}_i \sim \mathcal{N}(\tilde{\mu}_i,\sigma^2)$.  From the definition of noncentrality parameter, $\delta = \frac{(\mu_1^2 + \dots + \mu_m^2)}{\sigma^2}$. Using the same decomposition, we can say that $$\delta = \frac{1}{\sigma^2}\sum_{j=1}^{m} \tilde{\mu}_j^2 = \frac{(\Gamma\mu)^\top \Lambda (\Gamma\mu)}{\sigma^2} =  \frac{\mu^\top \mathbf{A} \mu}{\sigma^2}$$
+
+Conversely, since $\mathbf{A}$ is symmetric, the spectral decomposition of $\mathbf{A}$ would be
+$\mathbf{A} = \Gamma^\top \Lambda \Gamma$ for $\Lambda = \text{diag}(\lambda_1,\dots,\lambda_p)$. Let $\tilde{\mathbf{X}} = \Gamma \mathbf{X}$. Then, $$Y = \frac{1}{\sigma^2}\tilde{\mathbf{X}}^\top\Lambda\tilde{\mathbf{X}} = \sum_{j=1}^p \lambda_j \frac{\tilde{X}_j^2}{\sigma^2}$$ where $\tilde{X}_j^2\sim \mathcal{N}(\tilde{\mu}_j,\sigma^2)$. Now, consider the MGF of noncentral chi-squared distribution $C\sim \chi^2(m,\delta)$ which is given by
+$$M_C(t) = \frac{1}{(1-2t)^{\frac{m}{2}}}\exp\left(\frac{\delta t}{1-2t}\right)$$
+for $t<\frac{1}{2}$ and consider MGF of our $Y$
+$$M_Y(t) = \prod_{j=1}^p \frac{1}{(1-2t)^{\frac{1}{2}}}\exp\left(\frac{\frac{\tilde{\mu}^2}{\sigma^2}t}{1-2t}\right)$$
+We can see that $M_Y(t) = M_C(t)$ if and only if $p = m$ and $\lambda_i \in \{0,1\}$ and the trace of $\Lambda$ is $m$. Thus, $\mathbf{A}^2 = \mathbf{A}$.
+
+
