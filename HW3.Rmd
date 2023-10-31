@@ -147,6 +147,16 @@ summary(ami_data)
 m1 <- lm(TOT ~ GEN+AMT+PR+DIAP+QRS, data  = ami_data)
 summary(m1)
 ```
+```{r}
+p1 <- data.frame(
+        GEN = 1,
+        AMT = 1200,
+        PR = 140,
+        DIAP = 70,
+        QRS = 85
+)
+predict(m1,p1, interval = 'prediction', level = 0.99)
+```
 
 #### b) Repeat Part (a) using the second response $Y_2$ (AMI).
 
@@ -154,12 +164,17 @@ summary(m1)
 m2 <- lm(AMI ~ GEN+AMT+PR+DIAP+QRS, data  = ami_data)
 summary(m2)
 ```
-
+```{r}
+predict(m2,p1, interval = 'prediction', level = 0.99)
+```
 #### c) Perform a multivariate multiple regression analysis using both responses $Y_1$ and $Y_2$. Suggest and fit an appropriate linear regression model. Construct a 95\% prediction ellipse for both Total TCAD and Amount of amitriptyline for $z_1 = 1, z_2 = 1200, z_3 = 140, z_4 = 70$, and $z_5 = 85$.
 
 ```{r}
 m3 <- lm(cbind(TOT,AMI) ~ GEN+AMT+PR+DIAP+QRS, data  = ami_data)
 summary(m3)
+```
+```{r}
+predict(m3,p1, level = 0.99)
 ```
 
 #### d) Compare this ellipse with the prediction intervals in Parts (a) and (b). Comment on their differences. Note: the prediction intervals in Parts (a) and (b) would collectively provide a prediction rectangle here.
