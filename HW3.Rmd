@@ -1,0 +1,167 @@
+---
+title: "MA554 Applied Multivariate Analysis HW3"
+author: "Aukkawut Ammartayakun"
+date: "2023-10-29"
+header-includes:
+  - \newcommand{\ind}{\perp\!\!\!\perp}
+output:
+  pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(tidyr)
+library(DescTools)
+library(ggplot2)
+```
+
+## Problem 1
+
+Prove that $(n-p-1)\mathbf{S}\sim W_m(n-p-1,\boldsymbol{\Sigma})$ and $\mathbf{S}$ is independent of $\hat{\mathbf{B}}$.
+\
+\
+*Proof* To show that $(n-p-1)\mathbf{S}\sim W_m(n-p-1,\boldsymbol{\Sigma})$, using the fact that
+$$
+\begin{aligned}
+\hat{\mathbf{E}}^\top\hat{\mathbf{E}} &= \mathbf{E}^\top(\mathbb{I} - \mathbf{H})^\top(\mathbb{I} - \mathbf{H})\mathbf{E}\\
+&= \mathbf{E}^\top(\mathbb{I} - \mathbf{H})\mathbf{E}
+\end{aligned}
+$$
+and eigendecomposition of $(\mathbb{I} - \mathbf{H})$ which is $\mathbf{U}\boldsymbol{\Lambda}\mathbf{U}^\top$ where $\boldsymbol{\Lambda} = \text{diag}(1,1,\dots, 0)$ snd $\text{rank}(\boldsymbol{\Lambda}) = n-p-1$.
+Let $\tilde{\mathbf{E}} = \mathbf{U}^\top \mathbf{E}$, then
+$$
+\begin{aligned}
+\hat{\mathbf{E}}^\top\hat{\mathbf{E}} &= \tilde{\mathbf{E}}^\top \begin{bmatrix}\mathbb{I}_{n-p-1} & \boldsymbol{0} \\ \boldsymbol{0} & \boldsymbol{0}\end{bmatrix}\tilde{\mathbf{E}}
+\end{aligned}
+$$
+Note that the middle matrix is a $m\times m$ matrix with the rank of $n-p-1$. We can see that the matrix in the middle is Wishart distributed with degree of freedom $n-p-1$ and dimension $m$ with
+
+## Problem 2
+
+The file `plankton.txt` contains data on the catches of 5 varieties of plankton recorded by a marine research vessel. A total of 25 successive hauls were made. In each haul, two fine mesh nets were simultaneously dragged, one at 29 meter deep and the other at 31 meter deep. For each net in each haul, estimates were made of the “catch” (number of caught) for the 5 varieties A, B, C, D, and E.
+
+```{r echo = TRUE}
+plankton <- read.table("plankton.txt", skip = 13, nrow = 25)
+names(plankton) <- c(paste0(LETTERS[1:5],"_29"), paste0(LETTERS[1:5],"_31"))
+head(plankton)
+```
+The values of the counts of A, B, C, D and E for depth 29 meters are in columns 1-5; similar counts for depth 31 meters are in columns 6-10.
+You should view this as multivariate data with $n = 25$ and $p = 10$. Each row corresponds to one haul. You may assume the data consist of a random sample of size 25 from a multivariate normal population. Since numbers in the same row measure the same haul at different depths and for different varieties, it is repeated measurement data, on five measurements, over two levels of a factor (depth = 29 and 31).
+
+
+#### a) Test the null hypothesis at the 5% level that, for each variety, the expected catches of plankton were the same at both depths? Do this in two ways, using a Hotelling’s $T^2$ statistic (hence a multivariate test) and simultaneous Bonferronized $t$-tests (hence a bunch of univariate tests with simultaneous guarantees).
+\
+\
+In the first case, we want to test
+$$\begin{aligned}
+H_0 &: \boldsymbol{\mu}_{29} - \boldsymbol{\mu}_{31} = \boldsymbol{0}\\
+H_1 &: \boldsymbol{\mu}_{29} - \boldsymbol{\mu}_{31} \neq\boldsymbol{0}
+\end{aligned}$$
+
+However, we can define $\boldsymbol{\delta} = \boldsymbol{\mu}_{29} - \boldsymbol{\mu}_{31}$ and make this a one-sample test.
+
+```{r echo = TRUE}
+# Calculate mean difference vector
+differences <- plankton[, 1:5] - plankton[, 6:10]
+mean_differences <- colMeans(differences)
+mean_differences
+```
+```{r echo = TRUE}
+# do a T-test
+test_result <- HotellingsT2Test(differences)
+print(test_result)
+```
+
+Since $p$-value is small ($6.081\times10^{-10}$), we can reject the null hypothesis. That is, there is a significant difference between the expected catches of plankton in both depth. This can also be seen from the mean difference calculated earlier although it is not that clear whether that is significant or not at the beginning.
+\
+\
+In the second case, we will use the Bonforroni correction, that is the cut-off $p$-value is now $\frac{5}{m} \% = 1\%$ while we performing $m = 5$ hypothesis tests:
+$$\begin{aligned}
+H_0 &: {\mu}_{X,29} - {\mu}_{X,31} = 0\\
+H_1 &: {\mu}_{X,29} - {\mu}_{X,31} \neq 0
+\end{aligned}$$
+for $X \in \{A,B,C,D,E\}$.
+
+```{r}
+bonforroni <- apply(differences, 2, t.test)
+bonforroni
+```
+From the test results, we can see that we fail to reject null hypothesis for A but the rest of them, we can say that we reject the null hypothesis that there is no difference in mean for each type of catch in different depth.
+
+#### b) Following (a), identify all varieties, if any, which differed between depths.
+\
+\
+As said in (a), From the test results, we can see that we fail to reject null hypothesis for A but the rest of them, we can say that we reject the null hypothesis that there is no difference in mean for each type of catch in different depth. In another word, B, C, D, and E catch are differs between depths.
+
+
+#### c) Here is a different way to think of this data set. Each haul corresponds to 5 groups (the 5 varieties), and the data point is 2-dimensional, representing the catches from the two different depths. See the data frame `plankton2` below. Think of 5 groups of 2-dimensional vectors (with 25 vectors in each group). Conduct a Multivariate Analysis of Variance (MANOVA) to see if there was any statistical evidence to suggest that the five varieties are different in terms of their mean catch, measured by 2-dimension data at two depths. In addition, please draw a scatter plot of these 2-dimensional data points with colors indicating the five varieties.
+\
+\
+```{r echo = TRUE}
+plankton2 <- plankton %>% mutate(haul = 1:n()) %>%
+        pivot_longer(A_29:E_31,
+                     names_to = c("variety", ".value"),
+                     names_pattern = "([A-Z])_(.*)") %>%
+        rename(depth29 = '29', depth31 = '31')
+head(plankton2,10)
+```
+
+
+
+```{r}
+#scatterplot
+ggplot(plankton2, aes(x=depth29, y=depth31, colour = variety)) + geom_point()
+```
+```{r}
+fit <- manova(cbind(depth29,depth31) ~ variety, data = plankton2)
+summary(fit, test = "Wilks")
+```
+From MANOVA test, we can see that $p$-value is $2.2\times 10^{-16}$ and that means there is statistical evidence against null hypothesis, that is the treatment effect is not zero. In another word, there is a difference in mean between number of the different plankton caught in different depth.
+
+## Problem 3
+
+Amitriptyline is prescribed by some physicians as an antidepressant. However, there
+are also conjectured side effects that seem to be related to the use of the drug: irregular heartbeat, abnormal blood pressures, and irregular waves on the electrocardiogram among other things. Data gathered on 17 patients who were admitted to the hospital after an amitriptyline overdose are given in the data set `JW_ami_data.txt`. The two response variables are
+
+* $Y_1$ Total TCAD plasma level (TOT)
+* $Y_2$ Amount of amitriptyline present in TCAD plasma level (AMI)
+
+The five predictor variables are
+
+* $Z_1$ Gender: 1 if female, 0 if male (GEN)
+* $Z_2$ Amount of antidepressants taken at time of overdose (AMT)
+* $Z_3$ PR wave measurement (PR)
+* $Z_4$ Diastolic blood pressure (DIAP)
+* $Z_5$ QRS wave measurement (QRS)
+
+```{r}
+ami_data <- read.table("JW_ami_data.txt")
+names(ami_data) <- c("TOT", "AMI", "GEN", "AMT", "PR", "DIAP", "QRS")
+summary(ami_data)
+```
+
+#### a) Perform a regression analysis using only the first response $Y_1$ (TOT). Suggest and fit an appropriate linear regression model. Identify all independent variables (not including the intercept, since one is typically not interested in the intercept) that have non-zero coefficients for predicting $Y_1$ at the 5\% level, using the Bonferroni correction. Construct a 95\% prediction interval for Total TCAD for $z_1 = 1, z_2 = 1200, z_3 = 140, z_4 = 70$, and $z_5 = 85$.
+
+```{r}
+m1 <- lm(TOT ~ GEN+AMT+PR+DIAP+QRS, data  = ami_data)
+summary(m1)
+```
+
+#### b) Repeat Part (a) using the second response $Y_2$ (AMI).
+
+```{r}
+m2 <- lm(AMI ~ GEN+AMT+PR+DIAP+QRS, data  = ami_data)
+summary(m2)
+```
+
+#### c) Perform a multivariate multiple regression analysis using both responses $Y_1$ and $Y_2$. Suggest and fit an appropriate linear regression model. Construct a 95\% prediction ellipse for both Total TCAD and Amount of amitriptyline for $z_1 = 1, z_2 = 1200, z_3 = 140, z_4 = 70$, and $z_5 = 85$.
+
+```{r}
+m3 <- lm(cbind(TOT,AMI) ~ GEN+AMT+PR+DIAP+QRS, data  = ami_data)
+summary(m3)
+```
+
+#### d) Compare this ellipse with the prediction intervals in Parts (a) and (b). Comment on their differences. Note: the prediction intervals in Parts (a) and (b) would collectively provide a prediction rectangle here.
+
+#### e) Identify all independent variables (not including the intercept) that have non-zero coefficients for predicting $Y_1$ or $Y_2$ at the 5\% level, using the Bonferroni correction. In other words, we are testing which of the 10 $\beta$ values ($2\times 5 = 10$) is non-zero.
